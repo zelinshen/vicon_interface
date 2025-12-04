@@ -218,3 +218,6 @@ AMENT_IGNORE
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/ros2,python,visualstudiocode
+
+### Codex ###
+AGENTS.md
