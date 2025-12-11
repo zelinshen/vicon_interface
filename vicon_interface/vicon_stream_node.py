@@ -5,6 +5,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.duration import Duration
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import TransformStamped
@@ -131,7 +132,10 @@ class ViconStreamNode(Node):
                 )
                 return
 
-            latency = position[0]
+            grab_time = self.get_clock().now()
+            latency = float(position[0])
+            frame_time = grab_time - Duration(seconds=latency)
+            frame_stamp = frame_time.to_msg()
             frame_num = position[1]
             if frame_num == self.last_frame_num_:
                 return
@@ -187,7 +191,7 @@ class ViconStreamNode(Node):
             ) = states
 
             odom_msg = Odometry()
-            odom_msg.header.stamp = self.get_clock().now().to_msg()
+            odom_msg.header.stamp = frame_stamp
             odom_msg.header.frame_id = self.parent_frame_id_
             odom_msg.child_frame_id = self.child_frame_id_
             odom_msg.pose.pose.position.x = x
