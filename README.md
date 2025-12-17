@@ -10,7 +10,7 @@ Vicon ROS2 Python Driver
 
 # Configure
 
-Please update `vicon_tracker_ip` and `vicon_object_name` to match the Vicon PC's IP, and the name of the object.
+Please update `vicon_tracker_ip` and `vicon_object_names` (list) to match the Vicon PC's IP and tracked objects. The node publishes each object under `vicon_pose/<name>`, `odometry/<name>`, `odometry/filtered/<name>`, and `vicon_latency/<name>`. Optionally provide `child_frame_ids` (list) to align per-object child frame IDs; otherwise each object defaults to `<name>/base_link`.
 
 # Build
 
