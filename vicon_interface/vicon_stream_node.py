@@ -155,8 +155,11 @@ class ViconStreamNode(Node):
                     latency = self.tracker_.vicon_client.get_latency_total()
                     framenumber = self.tracker_.vicon_client.get_frame_number()
                     position = self.tracker_._get_object_position(object_name)
+                    if latency is None or framenumber is None or not position:
+                        self.get_logger().warn(f"Missing object `{object_name}` data in frame.",throttle_duration_sec=1.0)
+                        continue
                 else:
-                    self.get_logger().warn(f"Cannot get the pose of `{object_name}`.", throttle_duration_sec=1.0)
+                    self.get_logger().warn(f"Cannot get the frame with `{object_name}`.", throttle_duration_sec=1.0)
                     continue
 
                 grab_time = self.get_clock().now()
