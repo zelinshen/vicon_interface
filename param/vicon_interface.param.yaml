@@ -8,11 +8,11 @@
     # vicon_object_name: "lecar_car_car"
     # vicon_object_name: "lecar_car_car_small"
     # vicon_object_name: "lecar"
-    vicon_object_names: ["tron1"]
-    # vicon_object_names: ["tron1", "slide_object"]
+    # vicon_object_names: ["tron1"]
+    vicon_object_names: ["tron1", "slide_object"]
     parent_frame_id: "map"
-    child_frame_ids: ["tron1/base_link"]
-    # child_frame_ids: ["tron1/base_link", "slide_object/base_link"]
+    # child_frame_ids: ["tron1/base_link"]
+    child_frame_ids: ["tron1/base_link", "slide_object/base_link"]
     poll_vicon_dt: 0.004 # 0.01
     filtered_odom_dt: 0.004 # 0.01
 
