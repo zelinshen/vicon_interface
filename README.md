@@ -19,7 +19,7 @@ source /opt/ros/<ros_distro>/setup.bash
 colcon build
 ```
 Or only compile this package. From your `project_ws` run:
-```
+```bash
 source /opt/ros/$ROS_DISTRO/setup.bash
 colcon build --symlink-install --packages-select vicon_interface
 ```
