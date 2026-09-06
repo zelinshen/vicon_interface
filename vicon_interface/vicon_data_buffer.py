@@ -5,11 +5,26 @@ import tf_transformations
 
 
 class ViconDataBuffer:
-    def __init__(self, state_dim, rolling_window_size) -> None:
+    def __init__(self, state_dim, rolling_window_size, offset_xyz=None, offset_R=None) -> None:
+        """Rolling pose buffer with finite-difference velocity.
+
+        offset_xyz / offset_R describe the pose of the frame to report relative to the tracked rigid
+        body's own frame (T_marker->child): the child origin expressed in marker coordinates,
+        and the child orientation as a rotation matrix. They are applied per sample BEFORE the
+        finite difference, so the reported velocity is the child frame's velocity.
+        """
         self.past_poses_ = np.zeros((0, state_dim))
         self.past_times_ = np.zeros((0, 1))
         self.rolling_window_size_ = rolling_window_size
         self.lock_ = Lock()
+
+        self.offset_xyz_ = (
+            np.zeros(3) if offset_xyz is None else np.asarray(offset_xyz, dtype=float)
+        )
+        self.offset_R_ = np.eye(3) if offset_R is None else np.asarray(offset_R, dtype=float)
+        self.has_offset_ = bool(
+            np.any(self.offset_xyz_) or not np.allclose(self.offset_R_, np.eye(3))
+        )
 
         self.v_ = None
         self.a_ = None
@@ -21,6 +36,17 @@ class ViconDataBuffer:
             x /= 1000.0
             y /= 1000.0
             z /= 1000.0
+
+            # marker -> child frame, applied here so the finite difference below sees the
+            # child's trajectory.
+            # R is used to express the velocity in the child's own frame; in CHILD orientation, not the marker's.
+            R = tf_transformations.euler_matrix(roll, pitch, yaw, "sxyz")[:3, :3]
+            if self.has_offset_:
+                x, y, z = np.array([x, y, z]) + R @ self.offset_xyz_
+                R = R @ self.offset_R_
+                m = np.eye(4)
+                m[:3, :3] = R
+                roll, pitch, yaw = tf_transformations.euler_from_matrix(m, "sxyz")
             if len(self.past_poses_) == self.rolling_window_size_:
                 self.past_poses_ = self.past_poses_[1:]
                 self.past_times_ = self.past_times_[1:]
@@ -41,7 +67,6 @@ class ViconDataBuffer:
                 self.v_ = np.zeros(3)
                 self.a_ = np.zeros(3)
 
-            R = tf_transformations.euler_matrix(roll, pitch, yaw, "sxyz")[:3, :3]
             self.v_ = np.dot(R.T, self.v_)
             self.a_ = np.dot(R.T, self.a_)
 

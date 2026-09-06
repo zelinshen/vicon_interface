@@ -92,6 +92,25 @@ class ViconStreamNode(Node):
             self.declare_parameter("publish_tf", True).get_parameter_value().bool_value
         )
 
+        # (T_marker->child): the child origin in marker coordinates, and the child orientation as sxyz Euler angles in degrees.
+        n_obj = len(self.viacon_object_names_)
+        self.child_frame_offsets_xyz_ = self._read_per_object_vec3(
+            "child_frame_offset_xyz", n_obj
+        )
+        offsets_rpy_deg = self._read_per_object_vec3("child_frame_offset_rpy_deg", n_obj)
+        self.child_frame_offsets_R_ = [
+            tf_transformations.euler_matrix(*np.deg2rad(rpy), "sxyz")[:3, :3]
+            for rpy in offsets_rpy_deg
+        ]
+        for name, xyz, rpy in zip(
+            self.viacon_object_names_, self.child_frame_offsets_xyz_, offsets_rpy_deg
+        ):
+            if np.any(xyz) or np.any(rpy):
+                self.get_logger().info(
+                    f"`{name}` reported at offset xyz={xyz.tolist()} m, "
+                    f"rpy={rpy.tolist()} deg from the tracked rigid body."
+                )
+
         self.get_logger().info(
             f"Connecting to Viacon tracker at {self.viacon_tracker_ip_}..."
         )
@@ -114,7 +133,12 @@ class ViconStreamNode(Node):
             tracked_object = TrackedObject(
                 name=object_name,
                 child_frame_id=child_frame,
-                buffer=ViconDataBuffer(6, self.rolling_window_size_),
+                buffer=ViconDataBuffer(
+                    6,
+                    self.rolling_window_size_,
+                    offset_xyz=self.child_frame_offsets_xyz_[idx],
+                    offset_R=self.child_frame_offsets_R_[idx],
+                ),
                 pose_publisher=self.create_publisher(PoseWithCovarianceStamped, pose_topic, 1),
                 odom_publisher=self.create_publisher(Odometry, odom_topic, 1),
                 filtered_odom_publisher=self.create_publisher(Odometry, filtered_odom_topic, 1),
@@ -139,6 +163,23 @@ class ViconStreamNode(Node):
             self.filtered_odom_timer_callback,
             self.cb_group_filtered_odom_,
         )
+
+    def _read_per_object_vec3(self, name, n_obj):
+        """Read a flat 3*n_obj parameter as a list of 3-vectors; all-zero if unset or wrong size.
+        Three entries per object, in vicon_object_names order (ROS 2 parameter cannot nest arrays).
+        """
+        values = list(
+            self.declare_parameter(name, [0.0] * (3 * n_obj))
+            .get_parameter_value()
+            .double_array_value
+        )
+        if len(values) != 3 * n_obj:
+            self.get_logger().warn(
+                f"`{name}` must have {3 * n_obj} entries "
+                f"({n_obj} objects x 3); got {len(values)}. Using zeros."
+            )
+            values = [0.0] * (3 * n_obj)
+        return [np.array(values[3 * i:3 * i + 3]) for i in range(n_obj)]
 
     def timer_callback(self):
         while True:

@@ -8,13 +8,23 @@
     # vicon_object_name: "lecar_car_car"
     # vicon_object_name: "lecar_car_car_small"
     # vicon_object_name: "lecar"
-    vicon_object_names: ["tron1"]
+    vicon_object_names: ["arcadian"]
+    # vicon_object_names: ["tron1"]
     # vicon_object_names: ["tron1", "slide_object"]
     # vicon_object_names: ["tron1", "slide_object_small"]
     parent_frame_id: "map"
-    child_frame_ids: ["tron1/base_link"]
+    child_frame_ids: ["arcadian/base_link"]
+    # child_frame_ids: ["tron1/base_link"]
     # child_frame_ids: ["tron1/base_link", "slide_object/base_link"]
     # child_frame_ids: ["tron1/base_link", "slide_object_small/base_link"]
+
+    # (T_marker->child): the child origin in marker coordinates, and the child
+    # orientation as sxyz Euler angles in degrees.
+    #   p_child_world = p_marker_world + R_marker_world * child_frame_offset_xyz
+    #   R_child_world = R_marker_world * R(child_frame_offset_rpy_deg)
+    # Three entries per object, in vicon_object_names order (ROS 2 parameter cannot nest arrays).
+    child_frame_offset_xyz: [0.0, 0.0, -0.25]
+    child_frame_offset_rpy_deg: [0.0, 0.0, 0.0]
     poll_vicon_dt: 0.004 # 0.01
     filtered_odom_dt: 0.004 # 0.01
 
